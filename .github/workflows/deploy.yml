@@ -24,11 +24,23 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Show variables
+        run: |
+          echo "AWS_REGION=${{ vars.AWS_REGION }}"
+          echo "S3_BUCKET=${{ vars.S3_BUCKET }}"
+          echo "CLOUDFRONT_DISTRIBUTION_ID=${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}"
+
       - name: Upload static files to S3
         run: |
           aws s3 sync . s3://${{ vars.S3_BUCKET }} \
+            --delete \
             --exclude ".git/*" \
-            --exclude ".github/*"
+            --exclude ".github/*" \
+            --exclude "README.md" \
+            --exclude ".DS_Store"
 
       - name: Invalidate CloudFront cache
         run: |
