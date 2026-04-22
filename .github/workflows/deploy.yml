@@ -1,0 +1,34 @@
+name: Deploy Static Site to S3 and CloudFront
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Upload static files to S3
+        run: |
+          aws s3 cp index.html s3://${{ vars.S3_BUCKET }}/index.html
+          aws s3 cp error.html s3://${{ vars.S3_BUCKET }}/error.html
+          aws s3 cp script.js s3://${{ vars.S3_BUCKET }}/script.js
+
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
